@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import "./App.css"
 import Navbar from './components/Navbar'
 import Editor from '@monaco-editor/react';
@@ -6,8 +6,6 @@ import Select from 'react-select';
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown'
 import RingLoader from "react-spinners/RingLoader";
-import prettier from "prettier/standalone";
-import parserBabel from "prettier/parser-babel";
 
 const App = () => {
   const options = [
@@ -122,13 +120,29 @@ Code: ${code}
         model: "gemini-2.0-flash",
         contents: `You are an expert developer. Fix all errors and improve the following ${selectedOption.value} code. Return ONLY the corrected code, nothing else.\n\nCode:\n${code}`,
       });
-      // Use the AI's response as the new code
-      setCode(aiResponse.text || "");
+      console.log('Gemini AI response:', aiResponse);
+      // Try to get the code from .text or .candidates[0].content.parts[0].text
+      let fixedCode = aiResponse.text;
+      if (!fixedCode && aiResponse.candidates && aiResponse.candidates[0]?.content?.parts[0]?.text) {
+        fixedCode = aiResponse.candidates[0].content.parts[0].text;
+      }
+      if (!fixedCode) {
+        alert("Gemini did not return any fixed code. Please try again or check your API key.");
+        setLoading(false);
+        return;
+      }
+      setCode(fixedCode);
     } catch (e) {
       alert("Could not fix code: " + e.message);
     }
     setLoading(false);
   };
+
+  // Ensure body background color matches theme
+  useEffect(() => {
+    document.body.style.backgroundColor = theme === 'dark' ? '#000' : '#fff';
+    document.body.style.color = theme === 'dark' ? '#fff' : '#000';
+  }, [theme]);
 
   return (
     <>
