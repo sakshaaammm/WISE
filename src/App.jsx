@@ -6,6 +6,8 @@ import Select from 'react-select';
 import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown'
 import RingLoader from "react-spinners/RingLoader";
+import prettier from "prettier/standalone";
+import parserBabel from "prettier/parser-babel";
 
 const App = () => {
   const options = [
@@ -32,6 +34,7 @@ const App = () => {
   ];
 
   const [selectedOption, setSelectedOption] = useState(options[0]);
+  const [theme, setTheme] = useState('dark');
 
   const customStyles = {
     control: (provided) => ({
@@ -77,13 +80,17 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState("");
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   async function reviewCode() {
     setResponse("")
     setLoading(true);
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: `You are an expert-level software developer, skilled in writing efficient, clean, and advanced code.
-I’m sharing a piece of code written in ${selectedOption.value}.
+I'm sharing a piece of code written in ${selectedOption.value}.
 Your job is to deeply review this code and provide the following:
 
 1️⃣ A quality rating: Better, Good, Normal, or Bad.
@@ -102,11 +109,39 @@ Code: ${code}
     setLoading(false);
   }
 
+  // Fix code function using Gemini AI
+  const fixCodeWithAI = async () => {
+    if (!code) {
+      alert("Please enter code first");
+      return;
+    }
+    setLoading(true);
+    setResponse("");
+    try {
+      const aiResponse = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `You are an expert developer. Fix all errors and improve the following ${selectedOption.value} code. Return ONLY the corrected code, nothing else.\n\nCode:\n${code}`,
+      });
+      // Use the AI's response as the new code
+      setCode(aiResponse.text || "");
+    } catch (e) {
+      alert("Could not fix code: " + e.message);
+    }
+    setLoading(false);
+  };
 
   return (
     <>
-      <Navbar />
-      <div className="main flex justify-between" style={{ height: "calc(100vh - 90px" }}>
+      <Navbar onToggleTheme={toggleTheme} theme={theme} />
+      <div
+        className="main flex justify-between"
+        style={{
+          height: "calc(100vh - 90px)",
+          backgroundColor: theme === 'dark' ? '#000' : '#fff',
+          color: theme === 'dark' ? '#fff' : '#000',
+          transition: 'background 0.3s, color 0.3s',
+        }}
+      >
         <div className="left h-[87.5%] w-[50%]">
           <div className="tabs !mt-5 !px-5 !mb-3 w-full flex items-center gap-[10px]">
             <Select
@@ -115,7 +150,12 @@ Code: ${code}
               options={options}
               styles={customStyles}
             />
-            <button className="btnNormal bg-zinc-900 min-w-[120px] transition-all hover:bg-zinc-800">Fix Code</button>
+            <button
+              className="btnNormal bg-zinc-900 min-w-[120px] transition-all hover:bg-zinc-800"
+              onClick={fixCodeWithAI}
+            >
+              Fix Code
+            </button>
             <button onClick={() => {
               if (code === "") {
                 alert("Please enter code first")
@@ -126,7 +166,7 @@ Code: ${code}
             }} className="btnNormal bg-zinc-900 min-w-[120px] transition-all hover:bg-zinc-800">Review</button>
           </div>
 
-          <Editor height="100%" theme='vs-dark' language={selectedOption.value} value={code} onChange={(e) => { setCode(e) }} />
+          <Editor height="100%" theme={theme === 'dark' ? 'vs-dark' : 'light'} language={selectedOption.value} value={code} onChange={(e) => { setCode(e) }} />
         </div>
 
         <div className="right overflow-scroll !p-[10px] bg-zinc-900 w-[50%] h-[101%]">

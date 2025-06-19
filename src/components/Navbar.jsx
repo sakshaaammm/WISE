@@ -2,7 +2,7 @@ import React from 'react'
 import { BrainCircuit, Sun } from 'lucide-react';
 
 // This function returns a Navbar component
-const Navbar = () => {
+const Navbar = ({ onToggleTheme, theme }) => {
   // Return a JSX element
   return (
     <>
@@ -12,7 +12,14 @@ const Navbar = () => {
           <span className="text-2xl font-bold text-white ml-2">Codeify</span>
         </div>
         <div className="icons flex items-center gap-[20px]">
-          <i className='cursor-pointer transition-all hover:text-[#9333ea]'><Sun/></i>
+          <i
+            className='cursor-pointer transition-all hover:text-[#9333ea]'
+            onClick={onToggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{ color: theme === 'dark' ? '#fff' : '#000' }}
+          >
+            <Sun/>
+          </i>
         </div>
       </div>
     </>
